@@ -2,6 +2,7 @@ from flask import Flask, render_template, session, request, redirect, url_for
 from flask_login import LoginManager, UserMixin, login_required, login_user, current_user, logout_user
 from flask_pymongo import PyMongo
 from bson.json_util import dumps
+from flask_bcrypt import Bcrypt
 
 import time
 
@@ -11,6 +12,7 @@ app.config['MONGO_URI'] = 'mongodb://loginpanel:loginpanel*123*@ds115396.mlab.co
 app.config['SECRET_KEY'] = 'qGE2JkgBwMIl79erSglvGe3oOnrvxSYl'
 
 mongo = PyMongo(app)
+bcrypt = Bcrypt(app)
 
 login_manager = LoginManager()
 login_manager.init_app(app)
@@ -40,7 +42,7 @@ def register():
             form = {
                 'name': request.form['name'],
                 'email': request.form['email'],
-                'password': request.form['password'],
+                'password': bcrypt.generate_password_hash(request.form['password']),
                 'created_at': time.strftime('%d-%m-%Y %H:%M:%S'),
                 'updated_at': time.strftime('%d-%m-%Y %H:%M:%S')
             }   
@@ -62,7 +64,7 @@ def login():
         if result is None:
             return '<h2>Invalid credentials</h2>'
         
-        elif request.form['password'] == result['password']:
+        elif bcrypt.check_password_hash(result['password'], request.form['password']):
             user = User()
             user.id = result['email']
             login_user(user)
